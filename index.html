@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Шахматы — учись играть</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#16181f;color:#e2e0d8;min-height:100vh;padding:20px 12px;display:flex;flex-direction:column;align-items:center}
+h1{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#7880a0;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.app{width:100%;max-width:700px}
+.card{background:#1e2130;border-radius:16px;border:1px solid #2a2d40;padding:20px}
+
+/* Setup */
+#setup{display:flex;flex-direction:column;align-items:center;gap:16px;padding:28px 0}
+.setup-title{font-size:20px;font-weight:500;color:#eae8e0}
+.setup-sub{font-size:13px;color:#707888}
+.color-row{display:flex;gap:12px}
+.cbtn{width:134px;height:90px;border-radius:12px;border:1px solid #2e3148;background:#161928;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:border-color .15s,background .15s}
+.cbtn:hover{border-color:#5058a0;background:#1e2240}
+.cbtn span:first-child{font-size:34px;line-height:1}
+.cbtn span:last-child{font-size:12.5px;font-weight:500;color:#c8c4b8}
+
+/* Game */
+#game{display:none}
+.game-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pill{padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:500}
+.pill-mine{background:#1a3326;color:#5bca8a;border:1px solid #2a5040}
+.pill-ai{background:#1e2130;color:#7880a0;border:1px solid #2a2d40}
+.pill-chk{background:#321a1a;color:#e05050;border:1px solid #502828}
+.pill-end{background:#1e2130;color:#eae8e0;border:1px solid #3a3d50}
+.nbtn{font-size:12px;color:#7880a0;background:transparent;border:1px solid #2a2d40;border-radius:8px;padding:5px 12px;cursor:pointer;transition:border-color .15s,color .15s}
+.nbtn:hover{border-color:#5058a0;color:#c8c4b8}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
+
+/* Board */
+.bflr{display:flex;margin-left:16px}
+.bfl{font-size:10px;color:#454760;font-family:monospace;text-align:center}
+.brow{display:flex;align-items:center}
+.brl{width:16px;font-size:10px;color:#454760;font-family:monospace;text-align:right;padding-right:3px;flex-shrink:0}
+.bs{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:filter .1s}
+.bs:hover{filter:brightness(1.1)}
+.bov{position:absolute;inset:0;pointer-events:none}
+.bp{position:relative;z-index:2;line-height:1;pointer-events:none}
+.bpw{color:#fffef0;-webkit-text-stroke:.8px #1a1a1a;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.bpb{color:#141414;text-shadow:0 1px 3px rgba(255,255,255,.2)}
+.mdot{position:absolute;width:32%;height:32%;border-radius:50%;background:rgba(80,180,80,.4);z-index:3;pointer-events:none}
+.mcap{position:absolute;inset:0;border:3px solid rgba(80,180,80,.45);z-index:3;pointer-events:none}
+
+/* Panel */
+.panel{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pbox{background:#161928;border:1px solid #2a2d40;border-radius:12px;padding:12px 14px}
+.plbl{font-size:10px;color:#454760;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.ptxt{font-size:12.5px;line-height:1.85;color:#c8c4b8}
+.pthink{font-size:12.5px;line-height:1.85;color:#505870;font-style:italic}
+.hlbl{font-size:10px;color:#454760;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.hlist{font-size:11px;color:#606880;line-height:2.1;font-family:monospace;white-space:pre}
+
+/* Alert */
+.alert{margin-top:8px;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6}
+.alert-warn{background:#2a1f10;border:1px solid #503a18;color:#c8902a}
+.alert-ok{background:#102218;border:1px solid #1e4830;color:#4caa70}
+
+@media(max-width:540px){
+  .layout{grid-template-columns:1fr}
+  .bs{width:40px!important;height:40px!important}
+  .bfl{width:40px!important}
+  .brl{line-height:40px!important}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <h1>&#9822; Шахматы — учись играть</h1>
+  <div class="card">
+
+    <!-- Setup -->
+    <div id="setup">
+      <div class="setup-title">Выбери цвет фигур</div>
+      <div class="setup-sub">Белые ходят первыми</div>
+      <div class="color-row">
+        <button class="cbtn" id="cw"><span>&#9812;</span><span>Белые</span></button>
+        <button class="cbtn" id="cb"><span>&#9818;</span><span>Чёрные</span></button>
+      </div>
+    </div>
+
+    <!-- Game -->
+    <div id="game">
+      <div class="game-top">
+        <div id="gpill" class="pill pill-mine">Твой ход</div>
+        <button class="nbtn" id="ngbtn">&#8635; Новая игра</button>
+      </div>
+      <div class="layout">
+        <div id="bwrap"></div>
+        <div class="panel">
+          <div class="pbox">
+            <div class="plbl">Тренер</div>
+            <div id="coach" class="pthink">Выбери ход...</div>
+            <div id="alert" style="display:none"></div>
+          </div>
+          <div>
+            <div class="hlbl">История ходов</div>
+            <div id="hist" class="hlist">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chess.js@0.10.3/chess.min.js"></script>
+<script>
+(function(){
+
+var SQ=46;
+var PC={K:'&#9812;',Q:'&#9813;',R:'&#9814;',B:'&#9815;',N:'&#9816;',P:'&#9817;',
+        k:'&#9818;',q:'&#9819;',r:'&#9820;',b:'&#9821;',n:'&#9822;',p:'&#9823;'};
+var FL=['a','b','c','d','e','f','g','h'];
+var chess,pClr,sel,leg=[],lastF,lastT,aiOn,ended;
+
+/* ── PIECE NAMES ── */
+var ACC={p:'пешку',n:'коня',b:'слона',r:'ладью',q:'ферзя',k:'короля'};
+var NOM={p:'пешка',n:'конь',b:'слон',r:'ладья',q:'ферзь',k:'король'};
+var VAL={p:1,n:3,b:3,r:5,q:9,k:99};
+
+/* ── WAIT FOR CHESS.JS ── */
+function init(){
+  if(typeof Chess==='undefined'){setTimeout(init,80);return;}
+  document.getElementById('cw').onclick=function(){start('w');};
+  document.getElementById('cb').onclick=function(){start('b');};
+  document.getElementById('ngbtn').onclick=function(){
+    document.getElementById('setup').style.display='flex';
+    document.getElementById('game').style.display='none';
+  };
+}
+
+/* ── START ── */
+function start(c){
+  pClr=c; chess=new Chess();
+  sel=null;leg=[];lastF=lastT=null;aiOn=false;ended=false;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='block';
+  document.getElementById('alert').style.display='none';
+  drawBoard(); updatePill(); updateHist();
+  setCoach('idle','Партия началась — делай ход!');
+  if(pClr==='b'){aiOn=true;updatePill();setTimeout(doAI,700);}
+}
+
+/* ── BOARD ── */
+function isLt(c,r){return(c+r)%2===0;}
+
+function drawBoard(){
+  var w=document.getElementById('bwrap'); w.innerHTML='';
+  var ft=document.createElement('div');ft.className='bflr';ft.style.marginBottom='2px';
+  for(var i=0;i<8;i++){var d=document.createElement('div');d.className='bfl';d.style.width=SQ+'px';
+    d.innerHTML=pClr==='w'?FL[i]:FL[7-i];ft.appendChild(d);}
+  w.appendChild(ft);
+  for(var r=0;r<8;r++){
+    var row=document.createElement('div');row.className='brow';
+    var rn=pClr==='w'?8-r:r+1;
+    var rl=document.createElement('span');rl.className='brl';rl.style.lineHeight=SQ+'px';
+    rl.textContent=rn;row.appendChild(rl);
+    for(var c=0;c<8;c++){
+      var fi=pClr==='w'?c:7-c;
+      var sq=FL[fi]+rn;
+      var p=chess.get(sq);
+      var bg=isLt(c,r)?'#f0d9b5':'#b58863';
+      var cell=document.createElement('div');
+      cell.className='bs';cell.style.cssText='width:'+SQ+'px;height:'+SQ+'px;background:'+bg;
+      cell.dataset.sq=sq;
+      /* overlays */
+      if(sel===sq){addOv(cell,'rgba(255,210,0,.52)');}
+      if(lastF===sq||lastT===sq){addOv(cell,'rgba(140,190,50,.38)');}
+      if(chess.in_check()&&p&&p.type==='k'&&p.color===chess.turn()){addOv(cell,'rgba(220,50,50,.45)');}
+      /* legal moves */
+      var lm=leg.find(function(m){return m.to===sq;});
+      if(lm){var dot=document.createElement('div');dot.className=p?'mcap':'mdot';cell.appendChild(dot);}
+      /* piece */
+      if(p){
+        var sp=document.createElement('span');
+        sp.className='bp '+(p.color==='w'?'bpw':'bpb');
+        sp.style.fontSize=(SQ*.7)+'px';
+        sp.innerHTML=PC[p.color==='w'?p.type.toUpperCase():p.type];
+        cell.appendChild(sp);
+      }
+      cell.addEventListener('click',(function(s){return function(){onSq(s);};})(sq));
+      row.appendChild(cell);
+    }
+    w.appendChild(row);
+  }
+  var fb=document.createElement('div');fb.className='bflr';fb.style.marginTop='2px';
+  for(var j=0;j<8;j++){var d2=document.createElement('div');d2.className='bfl';d2.style.width=SQ+'px';
+    d2.innerHTML=pClr==='w'?FL[j]:FL[7-j];fb.appendChild(d2);}
+  w.appendChild(fb);
+}
+
+function addOv(cell,bg){var o=document.createElement('div');o.className='bov';o.style.background=bg;cell.appendChild(o);}
+
+/* ── CLICK HANDLER ── */
+function onSq(sq){
+  if(ended||aiOn||chess.turn()!==pClr)return;
+  var p=chess.get(sq);
+  if(p&&p.color===pClr){sel=sq;leg=chess.moves({square:sq,verbose:true});drawBoard();return;}
+  if(sel){
+    var mv=leg.find(function(m){return m.to===sq;});
+    if(mv){
+      var res=chess.move({from:sel,to:sq,promotion:'q'});
+      if(res){
+        lastF=res.from;lastT=res.to;sel=null;leg=[];
+        drawBoard();updatePill();updateHist();
+        if(!chess.game_over()){
+          aiOn=true;updatePill();
+          var comment=analyze(chess,res,pClr);
+          setCoach('text',comment);
+          setTimeout(doAI,950);
+        } else gameOver();
+        return;
+      }
+    }
+  }
+  sel=null;leg=[];drawBoard();
+}
+
+/* ─────────────────────────────────────────
+   AI ENGINE — простой минимакс (глубина 2)
+   ───────────────────────────────────────── */
+function pieceSquareBonus(piece,sq,color){
+  var f=sq.charCodeAt(0)-97, r=parseInt(sq[1])-1;
+  if(color==='b')r=7-r;
+  var tables={
+    p:[[0,0,0,0,0,0,0,0],[5,5,5,5,5,5,5,5],[1,1,2,3,3,2,1,1],[.5,.5,1,2.5,2.5,1,.5,.5],[0,0,0,2,2,0,0,0],[.5,-.5,-1,0,0,-1,-.5,.5],[.5,1,1,-2,-2,1,1,.5],[0,0,0,0,0,0,0,0]],
+    n:[[-5,-4,-3,-3,-3,-3,-4,-5],[-4,-2,0,0,0,0,-2,-4],[-3,0,1,1.5,1.5,1,0,-3],[-3,.5,1.5,2,2,1.5,.5,-3],[-3,0,1.5,2,2,1.5,0,-3],[-3,.5,1,1.5,1.5,1,.5,-3],[-4,-2,0,.5,.5,0,-2,-4],[-5,-4,-3,-3,-3,-3,-4,-5]],
+    b:[[-2,-1,-1,-1,-1,-1,-1,-2],[-1,0,0,0,0,0,0,-1],[-1,0,.5,1,1,.5,0,-1],[-1,.5,.5,1,1,.5,.5,-1],[-1,0,1,1,1,1,0,-1],[-1,1,1,1,1,1,1,-1],[-1,.5,0,0,0,0,.5,-1],[-2,-1,-1,-1,-1,-1,-1,-2]]
+  };
+  var t=tables[piece.type];
+  return t?t[7-r][f]:0;
+}
+
+function evalBoard(chess){
+  if(chess.in_checkmate())return chess.turn()==='w'?-9999:9999;
+  if(chess.in_draw())return 0;
+  var score=0;
+  chess.board().forEach(function(row,ri){
+    row.forEach(function(p,ci){
+      if(!p)return;
+      var sq=FL[ci]+(8-ri);
+      var v=VAL[p.type]*10+pieceSquareBonus(p,sq,p.color);
+      score+=p.color==='w'?v:-v;
+    });
+  });
+  return score;
+}
+
+function minimax(chess,depth,alpha,beta,maximizing){
+  if(depth===0||chess.game_over())return evalBoard(chess);
+  var moves=chess.moves({verbose:true});
+  if(maximizing){
+    var best=-Infinity;
+    for(var i=0;i<moves.length;i++){
+      chess.move(moves[i]);
+      var val=minimax(chess,depth-1,alpha,beta,false);
+      chess.undo();
+      best=Math.max(best,val);
+      alpha=Math.max(alpha,val);
+      if(beta<=alpha)break;
+    }
+    return best;
+  } else {
+    var best2=Infinity;
+    for(var j=0;j<moves.length;j++){
+      chess.move(moves[j]);
+      var v2=minimax(chess,depth-1,alpha,beta,true);
+      chess.undo();
+      best2=Math.min(best2,v2);
+      beta=Math.min(beta,v2);
+      if(beta<=alpha)break;
+    }
+    return best2;
+  }
+}
+
+function doAI(){
+  if(chess.game_over()){gameOver();return;}
+  var moves=chess.moves({verbose:true});
+  if(!moves.length){gameOver();return;}
+  var aiColor=pClr==='w'?'b':'w';
+  var maximizing=aiColor==='w';
+  var best=maximizing?-Infinity:Infinity;
+  var bestMove=moves[0];
+  /* add small noise so AI isn't deterministic */
+  moves=moves.sort(function(){return Math.random()-.5;});
+  for(var i=0;i<moves.length;i++){
+    chess.move(moves[i]);
+    var score=minimax(chess,1,-Infinity,Infinity,!maximizing);
+    chess.undo();
+    if(maximizing&&score>best){best=score;bestMove=moves[i];}
+    if(!maximizing&&score<best){best=score;bestMove=moves[i];}
+  }
+  /* occasionally play a random move to simulate ~900 ELO */
+  if(Math.random()<0.15) bestMove=moves[Math.floor(Math.random()*moves.length)];
+  var res=chess.move(bestMove);
+  if(res){
+    lastF=res.from;lastT=res.to;aiOn=false;
+    drawBoard();updatePill();updateHist();
+    if(chess.game_over())gameOver();
+  }
+}
+
+/* ─────────────────────────────────────────
+   COMMENTARY ENGINE — JS-анализатор позиции
+   ───────────────────────────────────────── */
+function analyze(chess,lastMove,playerColor){
+  var moveNum=chess.history().length;
+  var warnings=[]; var tips=[];
+
+  /* --- THREAT 1: что соперник может взять? --- */
+  var enemyMoves=chess.moves({verbose:true});
+  var caps=enemyMoves.filter(function(m){return m.captured;});
+  caps.sort(function(a,b){return(VAL[b.captured]||0)-(VAL[a.captured]||0);});
+  if(caps.length>0&&VAL[caps[0].captured]>=3){
+    warnings.push('Соперник может взять твою '+ACC[caps[0].captured]+' на '+caps[0].to+'!');
+  }
+
+  /* --- THREAT 2: соперник может поставить шах? --- */
+  if(warnings.length===0){
+    for(var i=0;i<Math.min(enemyMoves.length,25);i++){
+      chess.move(enemyMoves[i]);
+      var inChk=chess.in_check();
+      chess.undo();
+      if(inChk){warnings.push('Соперник может дать шах ходом '+enemyMoves[i].san+'.');break;}
+    }
+  }
+
+  /* --- THREAT 3: вилка конём? --- */
+  if(warnings.length===0){
+    var knightMoves=enemyMoves.filter(function(m){return m.piece==='n';});
+    for(var k=0;k<Math.min(knightMoves.length,10);k++){
+      chess.move(knightMoves[k]);
+      var afterMoves=chess.moves({verbose:true});
+      var forkTargets=afterMoves.filter(function(m){return m.captured&&VAL[m.captured]>=3;});
+      var isChk=chess.in_check();
+      chess.undo();
+      if(forkTargets.length>=2||(isChk&&forkTargets.length>=1)){
+        warnings.push('Осторожно: конь '+knightMoves[k].from+' может поставить вилку ходом '+knightMoves[k].san+'!');
+        break;
+      }
+    }
+  }
+
+  /* --- POSITIONAL TIPS --- */
+  /* Открытый дебют */
+  if(moveNum<=4){
+    var center=['e4','e5','d4','d5'];
+    var hasCenterPawn=center.some(function(sq){var p=chess.get(sq);return p&&p.type==='p'&&p.color===playerColor;});
+    if(!hasCenterPawn) tips.push('Займи центр ходом e4 или d4 — это важно в дебюте.');
+  }
+  /* Развитие фигур */
+  if(moveNum<=8&&tips.length===0){
+    var startNK=playerColor==='w'?['b1','g1']:['b8','g8'];
+    var undeveloped=startNK.filter(function(sq){var p=chess.get(sq);return p&&(p.type==='n'||p.type==='b');});
+    if(undeveloped.length>0) tips.push('Выведи фигуры с '+undeveloped[0]+' — развитие в приоритете.');
+  }
+  /* Рокировка */
+  if(moveNum>=6&&moveNum<=14&&tips.length===0){
+    var castled=chess.history({verbose:true}).some(function(m){return m.color===playerColor&&(m.flags==='k'||m.flags==='q');});
+    if(!castled) tips.push('Подумай о рокировке — король в центре уязвим.');
+  }
+  /* Середина игры */
+  if(moveNum>14&&tips.length===0){
+    var midTips=['Ищи открытые вертикали для ладей.','Перед ходом проверь: все фигуры в безопасности?','Активируй ладьи — поставь их на открытые линии.','Координируй фигуры: атакуй сразу несколькими.','Контролируй центр — оттуда фигуры бьют в обе стороны.'];
+    tips.push(midTips[Math.floor(moveNum/2)%midTips.length]);
+  }
+
+  var parts=[];
+  if(warnings.length>0) parts.push(warnings[0]);
+  if(tips.length>0) parts.push(tips[0]);
+  if(parts.length===0) parts.push('Позиция стабильна. Продолжай развивать фигуры и думай о плане.');
+  return parts.join(' ');
+}
+
+/* ── UI HELPERS ── */
+function updatePill(){
+  var el=document.getElementById('gpill');
+  if(ended)return;
+  if(chess.in_check()){el.className='pill pill-chk';el.textContent='Шах!';return;}
+  if(aiOn||chess.turn()!==pClr){el.className='pill pill-ai';el.textContent='Соперник думает...';}
+  else{el.className='pill pill-mine';el.textContent='Твой ход';}
+}
+
+function setCoach(type,txt){
+  document.getElementById('coach').className=type==='text'?'ptxt':'pthink';
+  document.getElementById('coach').textContent=txt;
+  document.getElementById('alert').style.display='none';
+}
+
+function showAlert(type,txt){
+  var el=document.getElementById('alert');
+  el.className='alert '+(type==='warn'?'alert-warn':'alert-ok');
+  el.textContent=txt; el.style.display='block';
+}
+
+function gameOver(){
+  ended=true;
+  var el=document.getElementById('gpill'); el.className='pill pill-end';
+  if(chess.in_checkmate()){
+    var iWin=chess.turn()!==pClr;
+    el.textContent=iWin?'Ты победил — мат!':'Мат. Попробуй ещё!';
+    setCoach('text',iWin?'Поздравляю — ты поставил мат! Отличная партия.':'Мат. Не расстраивайся — каждая партия учит. Сыграем снова?');
+  } else if(chess.in_stalemate()){
+    el.textContent='Пат — ничья';
+    setCoach('text','Пат! Интересный исход.');
+  } else {
+    el.textContent='Ничья';
+    setCoach('text','Партия завершилась ничьёй.');
+  }
+}
+
+function updateHist(){
+  var h=chess.history(); if(!h.length){document.getElementById('hist').textContent='—';return;}
+  var lines=[]; for(var i=0;i<h.length;i+=2) lines.push((i/2+1)+'.  '+h[i]+(h[i+1]?'   '+h[i+1]:''));
+  document.getElementById('hist').textContent=lines.slice(-8).join('\n');
+}
+
+init();
+})();
+</script>
+</body>
+</html>
