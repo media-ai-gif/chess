@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Шахматная академия</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%234A6650%27/%3E%3Ctext x=%2716%27 y=%2725%27 font-size=%2721%27 text-anchor=%27middle%27 fill=%27%23fff%27%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:'Ubuntu',sans-serif;
+  background:linear-gradient(145deg,#EEF0E8 0%,#E2E8DC 40%,#E8E4DC 100%);
+  min-height:100vh;
+  padding:28px 14px;
+}
+
+.app{max-width:860px;margin:0 auto}
+
+/* Header */
+.app-hdr{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.app-logo{font-size:28px;line-height:1;color:#4A6650}
+.app-name{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#7A8878}
+
+/* Card */
+.card{background:#FAFAF6;border-radius:22px;border:1px solid #DDE0D8;padding:24px;box-shadow:0 4px 20px rgba(60,80,50,.07)}
+
+/* Setup */
+#setup{display:flex;flex-direction:column;align-items:center;gap:18px;padding:32px 0 24px}
+.s-title{font-size:22px;font-weight:500;color:#2C302A}
+.s-sub{font-size:13px;font-weight:300;color:#8A9280}
+.s-row{display:flex;gap:14px}
+.cbtn{
+  width:146px;height:100px;border-radius:16px;
+  border:1.5px solid #D8DCD0;background:#F2F4EE;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  transition:all .2s;
+}
+.cbtn:hover{border-color:#4A6650;background:#E8EEE4;transform:translateY(-2px);box-shadow:0 6px 16px rgba(74,102,80,.14)}
+.cbtn .ci{font-size:38px;line-height:1;color:#2C302A}
+.cbtn .cl{font-size:13px;font-weight:500;color:#3A4038}
+
+/* Game header */
+#game{display:none}
+.g-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+
+.pill{padding:5px 15px;border-radius:20px;font-size:12px;font-weight:500;font-family:'Ubuntu',sans-serif}
+.p-mine{background:#E0EDD8;color:#2E5A3A;border:1px solid #B8D4B4}
+.p-ai  {background:#ECEEE8;color:#6A7268;border:1px solid #D4D8CC}
+.p-chk {background:#F0E0D8;color:#8A3020;border:1px solid #D8B4A8}
+.p-end {background:#ECEEE8;color:#2C302A;border:1px solid #C8CAC0;font-weight:600}
+
+.ngbtn{
+  font-family:'Ubuntu',sans-serif;font-size:12px;font-weight:400;
+  color:#7A8878;background:transparent;
+  border:1px solid #D0D4C8;border-radius:9px;
+  padding:5px 14px;cursor:pointer;transition:all .15s;
+}
+.ngbtn:hover{border-color:#4A6650;color:#2C302A}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start}
+
+/* Board */
+.bflr{display:flex;margin-left:24px}
+.bfl{font-size:10px;font-weight:500;color:#A8B0A0;font-family:'Ubuntu Mono',monospace;text-align:center}
+.brow{display:flex;align-items:center}
+.brl{font-size:10px;font-weight:500;color:#A8B0A0;font-family:'Ubuntu Mono',monospace;text-align:right;padding-right:4px;flex-shrink:0}
+
+.sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:filter .1s}
+.sq:hover{filter:brightness(1.07)}
+.sq-ov{position:absolute;inset:0;pointer-events:none}
+.piece{position:relative;z-index:2;line-height:1;pointer-events:none}
+.pw{color:#F0E4C0;text-shadow:0 1px 5px rgba(0,0,0,.6),0 0 2px rgba(0,0,0,.25)}
+.pb{color:#121010;text-shadow:0 1px 4px rgba(255,255,255,.2)}
+
+.mdot{position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(50,110,60,.3);z-index:3;pointer-events:none}
+.mcap{position:absolute;inset:3px;border:3px solid rgba(50,110,60,.35);border-radius:2px;z-index:3;pointer-events:none}
+
+@keyframes sug{0%,100%{opacity:.45}50%{opacity:.8}}
+.sug-ring{animation:sug 1.6s ease-in-out infinite}
+
+/* Panel */
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+.pbox{background:#F2F4EE;border:1px solid #D8DCD0;border-radius:15px;padding:14px 16px}
+.plbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9AA098;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.ptxt{font-size:13px;line-height:1.9;color:#3A4038}
+.pidle{font-size:13px;line-height:1.9;color:#A8B0A0;font-style:italic}
+
+.warn-box{
+  margin-top:9px;padding:9px 12px;
+  background:#F8EDE6;border:1px solid #DEC0A8;border-radius:10px;
+  font-size:12.5px;color:#7A3818;line-height:1.65;
+  display:flex;gap:8px;align-items:flex-start;
+}
+.sug-box{
+  margin-top:9px;padding:9px 12px;
+  background:#E4EEE2;border:1px solid #B4CEB0;border-radius:10px;
+  font-size:12.5px;color:#1E4A2A;line-height:1.65;
+  display:flex;gap:8px;align-items:flex-start;
+}
+.sug-san{
+  display:inline-block;background:#2E5A3A;color:#fff;
+  padding:1px 9px;border-radius:6px;font-weight:700;
+  font-size:12.5px;margin:0 3px;letter-spacing:.04em;
+  font-family:'Ubuntu Mono',monospace;
+}
+
+/* History */
+.hlbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9AA098;margin-bottom:5px}
+.hlist{font-size:12px;color:#7A8878;line-height:2.1;font-family:'Ubuntu Mono',monospace;white-space:pre}
+
+/* Star marker */
+.sq-star{position:absolute;bottom:4px;right:5px;font-size:13px;z-index:4;pointer-events:none;line-height:1;color:#2E5A3A}
+
+@media(max-width:580px){
+  .layout{grid-template-columns:1fr}
+  .board-wrap{display:flex;flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-hdr">
+    <span class="app-logo">&#9822;</span>
+    <span class="app-name">Шахматная академия</span>
+  </div>
+  <div class="card">
+
+    <div id="setup">
+      <div class="s-title">Выбери цвет фигур</div>
+      <div class="s-sub">Белые ходят первыми</div>
+      <div class="s-row">
+        <button class="cbtn" id="cw"><span class="ci">&#9812;</span><span class="cl">Белые</span></button>
+        <button class="cbtn" id="cb"><span class="ci">&#9818;</span><span class="cl">Чёрные</span></button>
+      </div>
+    </div>
+
+    <div id="game">
+      <div class="g-top">
+        <div id="gpill" class="pill p-mine">Твой ход</div>
+        <button class="ngbtn" id="ngbtn">&#8635; Новая игра</button>
+      </div>
+      <div class="layout">
+        <div id="bwrap" class="board-wrap"></div>
+        <div class="panel">
+          <div class="pbox">
+            <div class="plbl">&#127941; Тренер</div>
+            <div id="ctxt" class="pidle">Делай первый ход...</div>
+            <div id="wbox" style="display:none" class="warn-box"><span style="flex-shrink:0;font-size:15px;margin-top:1px">&#9888;</span><span id="wtxt"></span></div>
+            <div id="sbox" style="display:none" class="sug-box"><span style="flex-shrink:0;font-size:15px;margin-top:1px">&#128161;</span><span id="stxt"></span></div>
+          </div>
+          <div>
+            <div class="hlbl">История</div>
+            <div id="hist" class="hlist">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chess.js@0.10.3/chess.min.js"></script>
+<script>
+(function(){
+var SQ=62;
+var PC={K:'&#9818;',Q:'&#9819;',R:'&#9820;',B:'&#9821;',N:'&#9822;',P:'&#9823;',k:'&#9818;',q:'&#9819;',r:'&#9820;',b:'&#9821;',n:'&#9822;',p:'&#9823;'};
+var FL=['a','b','c','d','e','f','g','h'];
+var VAL={p:1,n:3,b:3.15,r:5,q:9,k:99};
+var ACC={p:'пешку',n:'коня',b:'слона',r:'ладью',q:'ферзя',k:'короля'};
+
+/* piece-square tables */
+var PST={
+  p:[[0,0,0,0,0,0,0,0],[5,5,5,5,5,5,5,5],[1,1,2,3,3,2,1,1],[.5,.5,1,2.5,2.5,1,.5,.5],[0,0,0,2,2,0,0,0],[.5,-.5,-1,0,0,-1,-.5,.5],[.5,1,1,-2,-2,1,1,.5],[0,0,0,0,0,0,0,0]],
+  n:[[-5,-4,-3,-3,-3,-3,-4,-5],[-4,-2,0,.5,.5,0,-2,-4],[-3,.5,1,1.5,1.5,1,.5,-3],[-3,0,1.5,2,2,1.5,0,-3],[-3,.5,1.5,2,2,1.5,.5,-3],[-3,0,1,1.5,1.5,1,0,-3],[-4,-2,0,0,0,0,-2,-4],[-5,-4,-3,-3,-3,-3,-4,-5]],
+  b:[[-2,-1,-1,-1,-1,-1,-1,-2],[-1,0,0,0,0,0,0,-1],[-1,0,.5,1,1,.5,0,-1],[-1,.5,.5,1,1,.5,.5,-1],[-1,0,1,1,1,1,0,-1],[-1,1,1,1,1,1,1,-1],[-1,.5,0,0,0,0,.5,-1],[-2,-1,-1,-1,-1,-1,-1,-2]],
+  r:[[0,0,0,.5,.5,0,0,0],[-.5,0,0,0,0,0,0,-.5],[-.5,0,0,0,0,0,0,-.5],[-.5,0,0,0,0,0,0,-.5],[-.5,0,0,0,0,0,0,-.5],[-.5,0,0,0,0,0,0,-.5],[.5,1,1,1,1,1,1,.5],[0,0,0,0,0,0,0,0]],
+  q:[[-2,-1,-1,-.5,-.5,-1,-1,-2],[-1,0,.5,0,0,0,0,-1],[-1,.5,.5,.5,.5,.5,0,-1],[0,0,.5,.5,.5,.5,0,-.5],[-.5,0,.5,.5,.5,.5,0,-.5],[-1,0,.5,.5,.5,.5,0,-1],[-1,0,0,0,0,0,0,-1],[-2,-1,-1,-.5,-.5,-1,-1,-2]]
+};
+
+var chess,pClr,sel,leg=[],lF,lT,aiOn,ended,sugF,sugT;
+
+/* ── INIT ── */
+function init(){
+  if(typeof Chess==='undefined'){setTimeout(init,80);return;}
+  document.getElementById('cw').onclick=function(){go('w');};
+  document.getElementById('cb').onclick=function(){go('b');};
+  document.getElementById('ngbtn').onclick=function(){
+    document.getElementById('setup').style.display='flex';
+    document.getElementById('game').style.display='none';
+  };
+}
+
+function go(c){
+  pClr=c;chess=new Chess();sel=null;leg=[];lF=lT=null;aiOn=false;ended=false;sugF=sugT=null;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='block';
+  hideCoachExtras();
+  draw();pill();hist();
+  setMain('idle','Партия началась! Делай первый ход.');
+  if(pClr==='b'){aiOn=true;pill();setTimeout(function(){aiMove();showSuggestion();},700);}
+}
+
+/* ── BOARD ── */
+function isLt(c,r){return(c+r)%2===0;}
+function ov(cell,bg){var o=document.createElement('div');o.className='sq-ov';o.style.background=bg;cell.appendChild(o);}
+
+function draw(){
+  var w=document.getElementById('bwrap');w.innerHTML='';
+  var rW=24;
+  var ft=document.createElement('div');ft.className='bflr';ft.style.marginBottom='3px';
+  for(var i=0;i<8;i++){var d=document.createElement('div');d.className='bfl';d.style.width=SQ+'px';d.innerHTML=pClr==='w'?FL[i]:FL[7-i];ft.appendChild(d);}
+  w.appendChild(ft);
+  for(var r=0;r<8;r++){
+    var row=document.createElement('div');row.className='brow';
+    var rn=pClr==='w'?8-r:r+1;
+    var rl=document.createElement('span');rl.className='brl';rl.style.cssText='width:'+rW+'px;line-height:'+SQ+'px';rl.textContent=rn;row.appendChild(rl);
+    for(var c=0;c<8;c++){
+      var fi=pClr==='w'?c:7-c;
+      var sq=FL[fi]+rn;
+      var p=chess.get(sq);
+      var bg=isLt(c,r)?'#F0D9B5':'#B58863';
+      var cell=document.createElement('div');cell.className='sq';cell.style.cssText='width:'+SQ+'px;height:'+SQ+'px;background:'+bg;cell.dataset.sq=sq;
+      if(sel===sq) ov(cell,'rgba(240,200,0,.5)');
+      if(lF===sq||lT===sq) ov(cell,'rgba(120,175,60,.38)');
+      if(chess.in_check()&&p&&p.type==='k'&&p.color===chess.turn()) ov(cell,'rgba(200,50,40,.42)');
+      if(sugF===sq){var oring=document.createElement('div');oring.className='sq-ov sug-ring';oring.style.background='rgba(74,102,80,.5)';cell.appendChild(oring);}
+      if(sugT===sq){ov(cell,'rgba(74,102,80,.38)');var star=document.createElement('div');star.className='sq-star';star.textContent='★';cell.appendChild(star);}
+      var lm=leg.find(function(m){return m.to===sq;});
+      if(lm){var dot=document.createElement('div');dot.className=p?'mcap':'mdot';cell.appendChild(dot);}
+      if(p){var sp=document.createElement('span');sp.className='piece '+(p.color==='w'?'pw':'pb');sp.style.fontSize=(SQ*.73)+'px';sp.innerHTML=PC[p.color==='w'?p.type.toUpperCase():p.type];cell.appendChild(sp);}
+      cell.addEventListener('click',(function(s){return function(){click(s);};})(sq));
+      row.appendChild(cell);
+    }
+    w.appendChild(row);
+  }
+  var fb=document.createElement('div');fb.className='bflr';fb.style.marginTop='3px';
+  for(var j=0;j<8;j++){var d2=document.createElement('div');d2.className='bfl';d2.style.width=SQ+'px';d2.innerHTML=pClr==='w'?FL[j]:FL[7-j];fb.appendChild(d2);}
+  w.appendChild(fb);
+}
+
+/* ── CLICKS ── */
+function click(sq){
+  if(ended||aiOn||chess.turn()!==pClr)return;
+  var p=chess.get(sq);
+  if(p&&p.color===pClr){sel=sq;leg=chess.moves({square:sq,verbose:true});draw();return;}
+  if(sel){
+    var mv=leg.find(function(m){return m.to===sq;});
+    if(mv){
+      var res=chess.move({from:sel,to:sq,promotion:'q'});
+      if(res){
+        lF=res.from;lT=res.to;sel=null;leg=[];sugF=sugT=null;
+        draw();pill();hist();
+        if(!chess.game_over()){
+          aiOn=true;pill();
+          var warn=threat(chess,pClr);
+          setMain('text','Соперник отвечает...');
+          setWarn(warn);setSug(null);
+          setTimeout(function(){aiMove();showSuggestion();},980);
+        }else gameOver();
+        return;
+      }
+    }
+  }
+  sel=null;leg=[];draw();
+}
+
+/* ── AI ── */
+function pst(p,sq){
+  var t=PST[p.type];if(!t)return 0;
+  var f=sq.charCodeAt(0)-97,r=parseInt(sq[1])-1;
+  var row=p.color==='w'?7-r:r;
+  return t[row][f];
+}
+function evalBoard(chess){
+  if(chess.in_checkmate())return chess.turn()==='w'?-9999:9999;
+  if(chess.in_draw())return 0;
+  var s=0;
+  chess.board().forEach(function(row,ri){row.forEach(function(p,ci){
+    if(!p)return;
+    var sq=FL[ci]+(8-ri);
+    var v=(VAL[p.type]||0)*10+pst(p,sq);
+    s+=p.color==='w'?v:-v;
+  });});
+  return s;
+}
+function minimax(chess,depth,alpha,beta,max){
+  if(depth===0||chess.game_over())return evalBoard(chess);
+  var mvs=chess.moves({verbose:true});
+  if(max){var best=-Infinity;for(var i=0;i<mvs.length;i++){chess.move(mvs[i]);best=Math.max(best,minimax(chess,depth-1,alpha,beta,false));chess.undo();alpha=Math.max(alpha,best);if(beta<=alpha)break;}return best;}
+  else{var b2=Infinity;for(var j=0;j<mvs.length;j++){chess.move(mvs[j]);b2=Math.min(b2,minimax(chess,depth-1,alpha,beta,true));chess.undo();beta=Math.min(beta,b2);if(beta<=alpha)break;}return b2;}
+}
+function bestMoveFor(chess,color){
+  var mvs=chess.moves({verbose:true});if(!mvs.length)return null;
+  var isMax=color==='w';var best=isMax?-Infinity:Infinity;var bm=mvs[0];
+  var sh=mvs.slice().sort(function(){return Math.random()-.5;});
+  for(var i=0;i<sh.length;i++){
+    chess.move(sh[i]);var sc=minimax(chess,1,-Infinity,Infinity,!isMax);chess.undo();
+    if(isMax&&sc>best){best=sc;bm=sh[i];}
+    if(!isMax&&sc<best){best=sc;bm=sh[i];}
+  }
+  if(Math.random()<.14)bm=sh[0];
+  return bm;
+}
+function aiMove(){
+  if(chess.game_over()){gameOver();return;}
+  var m=bestMoveFor(chess,pClr==='w'?'b':'w');
+  if(!m){gameOver();return;}
+  var res=chess.move(m);
+  if(res){lF=res.from;lT=res.to;aiOn=false;draw();pill();hist();if(chess.game_over())gameOver();}
+}
+
+/* ── COACH ── */
+function threat(chess,playerColor){
+  var em=chess.moves({verbose:true});
+  var caps=em.filter(function(m){return m.captured;});
+  caps.sort(function(a,b){return(VAL[b.captured]||0)-(VAL[a.captured]||0);});
+  if(caps.length>0&&VAL[caps[0].captured]>=3)
+    return 'Соперник может взять твою '+ACC[caps[0].captured]+' на '+caps[0].to+'!';
+  for(var i=0;i<Math.min(em.length,20);i++){
+    chess.move(em[i]);var c=chess.in_check();chess.undo();
+    if(c)return 'Соперник угрожает шахом ходом '+em[i].san+'.';
+  }
+  return null;
+}
+
+function explainBest(mv,chess,playerColor){
+  if(!mv)return '';
+  var mn=chess.history().length;
+  chess.move(mv);var mate=chess.in_checkmate(),chk=chess.in_check();chess.undo();
+  if(mate) return 'Это победный ход — мат сопернику!';
+  if(mv.captured&&VAL[mv.captured]>=VAL[mv.piece])
+    return 'Бесплатное взятие — забирай '+ACC[mv.captured]+'!';
+  if(chk)  return 'Дай шах — заставь соперника защищаться.';
+  if(mv.flags==='k'||mv.flags==='q')return 'Рокируй — спрячь короля и активируй ладью.';
+  if(mn<=8&&mv.piece==='n')return 'Развивай коня — займи активное поле в центре.';
+  if(mn<=8&&mv.piece==='b')return 'Выведи слона — открой диагональ.';
+  if(mn<=6&&mv.piece==='p'&&['e4','e5','d4','d5'].indexOf(mv.to)>-1)return 'Занимай центр — сильный дебютный ход.';
+  if(mn>12){var tips=['Координируй фигуры — атакуй вместе.','Поставь ладью на открытую вертикаль.','Улучши позицию наименее активной фигуры.'];return tips[mn%3];}
+  return 'Хороший позиционный ход — улучшает расположение фигур.';
+}
+
+function showSuggestion(){
+  if(ended||chess.turn()!==pClr)return;
+  var bm=bestMoveFor(chess,pClr);
+  if(!bm)return;
+  var w=threat(chess,pClr);
+  var ex=explainBest(bm,chess,pClr);
+  sugF=bm.from;sugT=bm.to;
+  draw();
+  setMain('text','Твой ход!');
+  setWarn(w);
+  setSug({san:bm.san,text:ex});
+}
+
+/* ── UI ── */
+function pill(){
+  var el=document.getElementById('gpill');if(ended)return;
+  if(chess.in_check()){el.className='pill p-chk';el.textContent='Шах!';return;}
+  if(aiOn||chess.turn()!==pClr){el.className='pill p-ai';el.textContent='Соперник думает...';}
+  else{el.className='pill p-mine';el.textContent='Твой ход';}
+}
+function setMain(type,txt){
+  var el=document.getElementById('ctxt');
+  el.className=type==='idle'?'pidle':'ptxt';el.textContent=txt;
+}
+function setWarn(txt){
+  var wb=document.getElementById('wbox'),wt=document.getElementById('wtxt');
+  if(txt){wb.style.display='flex';wt.textContent=txt;}else wb.style.display='none';
+}
+function setSug(sug){
+  var sb=document.getElementById('sbox'),st=document.getElementById('stxt');
+  if(sug){sb.style.display='flex';st.innerHTML='Рекомендую: <span class="sug-san">'+sug.san+'</span> — '+sug.text;}
+  else sb.style.display='none';
+}
+function hideCoachExtras(){setWarn(null);setSug(null);}
+function gameOver(){
+  ended=true;var el=document.getElementById('gpill');el.className='pill p-end';
+  sugF=sugT=null;draw();
+  if(chess.in_checkmate()){
+    var iw=chess.turn()!==pClr;el.textContent=iw?'Ты победил — мат!':'Мат. Попробуй ещё!';
+    setMain('text',iw?'Поздравляю — ты поставил мат! Блестящая партия.':'Мат. Хорошая борьба! Каждая партия — опыт.');
+  }else if(chess.in_stalemate()){el.textContent='Пат — ничья';setMain('text','Пат! Интересный исход.');}
+  else{el.textContent='Ничья';setMain('text','Партия завершилась ничьёй.');}
+  setWarn(null);setSug(null);
+}
+function hist(){
+  var h=chess.history();if(!h.length){document.getElementById('hist').textContent='—';return;}
+  var lines=[];for(var i=0;i<h.length;i+=2)lines.push((i/2+1)+'.  '+h[i]+(h[i+1]?'   '+h[i+1]:''));
+  document.getElementById('hist').textContent=lines.slice(-8).join('\n');
+}
+
+init();
+})();
+</script>
+</body>
+</html>
